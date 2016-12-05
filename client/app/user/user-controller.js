@@ -23,11 +23,17 @@ angular.module('app.user', ['app.services'])
     });*/
   };
 
+  $scope.startGame = function() {
+    UserInfo.getQuestions().then(function() {
+
+    });
+  };
+
 
 })
 
 
-.controller('GameController', function($scope, UserInfo, $rootScope) {
+.controller('GameController', function($scope, UserInfo) {
 
   //Local scope variable
   $scope.activeUsers = [];
@@ -35,16 +41,11 @@ angular.module('app.user', ['app.services'])
   $scope.answers = [];
 
 
+
+
 })
 
-.controller('RoomController', function($scope, UserInfo, $rootScope) {
-  //Updates informations about the room when getting to a specific room
-  // $rootScope.$on('getRoom', function() {
-  //   $scope.room = UserInfo.currentRoom;
-    // $scope.users.usernames = UserInfo.currentRoom.usernames;
-
-  // });
-
+.controller('RoomController', function($scope, UserInfo) {
 
 })
 

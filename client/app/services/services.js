@@ -27,7 +27,8 @@ angular.module('app.services', [])
     },
     avatar: 'http://www.how-to-draw-funny-cartoons.com/images/draw-a-goose-001.jpg',
     currentRoom: {},
-
+    question: ['Question 1', 'Question 2', 'Question 3'],
+    answers: [],
     addNewRoom: function(newRoomName) {
         // return $http({
         //   method: 'POST',
@@ -41,11 +42,9 @@ angular.module('app.services', [])
       this.rooms[newRoomName] = {roomname: newRoomName, admin: this.user};
       this.currentRoom = this.rooms[newRoomName];
     },
-
     getRoom: function(room) {
       this.currentRoom = this.rooms[room.roomname];
       console.log(this.currentRoom);
-      $rootScope.$emit('getRoom');
 
       //send server request for users avatars
       // return $http({
@@ -70,8 +69,8 @@ angular.module('app.services', [])
           $location.path('/home/profile');
         }
       }).catch(function(err) {
-        console.log("RESP CATCH", err)
-      })
+        console.log("RESP CATCH", err);
+      });
     },
     signIn: function(user) {
       return $http({
@@ -80,6 +79,7 @@ angular.module('app.services', [])
         data: user
       }).then(function(resp) {
         console.log(resp);
+
       });
     }
 
