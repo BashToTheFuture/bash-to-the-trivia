@@ -9,14 +9,17 @@ angular.module('app.services', [])
     avatar: 'http://www.how-to-draw-funny-cartoons.com/images/draw-a-goose-001.jpg',
     currentRoom: {},
     activeUsers: [],
+    // context: this,
 
 
     getRoom: function(room) {
-      socket.emit('changeRoom', room, this.user);
-      if (room === 'Profile') {
-        this.activeUsers = [];
-      }
-      this.currentRoom = this.rooms[room.roomname];
+      // var context = this;
+      // socket.emit('changeRoom', room, context.user);
+      console.log("currRoom", this.currentRoom)
+      this.currentRoom = this.rooms[room];
+      // if (socket.room === 'Profile') {
+      //   this.activeUsers = [];
+      // }
     },
 
     signUp: function(user) {
@@ -29,7 +32,6 @@ angular.module('app.services', [])
         if (!resp.data) {
           $location.path('/signin');
         } else {
-          console.log("resp Signup", resp.data)
           context.user = resp.data.username;
           context.rooms = resp.data.rooms;
           socket.emit('signUp', {username: resp.data.username});

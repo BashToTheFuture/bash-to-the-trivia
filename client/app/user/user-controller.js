@@ -6,12 +6,14 @@ angular.module('app.user', ['app.services'])
   $scope.rooms = UserInfo.rooms;
   $scope.avatar = UserInfo.avatar;
   $scope.users = {};
+  $scope.room = 'Profile';
   $scope.newPlayer = {};
 
 
   $scope.goToRoom = function(roomName) {
     $scope.room = UserInfo.getRoom(roomName);
-    $scope.users.usernames = UserInfo.currentRoom.users;
+    $scope.users = UserInfo.currentRoom.users;
+    $scope.admin = UserInfo.currentRoom.admin;
   };
 
   $scope.addRoom = function(newRoomName) {
