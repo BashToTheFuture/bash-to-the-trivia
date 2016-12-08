@@ -15,7 +15,6 @@ angular.module('app.user', ['app.services'])
   };
 
   $scope.addRoom = function(newRoomName) {
-    // $scope.rooms[newRoomName] = {roomname: newRoomName, admin: $scope.user};
     UserInfo.addNewRoom(newRoomName);
   };
 
@@ -72,11 +71,9 @@ angular.module('app.user', ['app.services'])
 
 
 .controller('ProfileController', function($scope, UserInfo, $rootScope) {
-
-  $scope.activeUsers = [];
-  $scope.questions = [];
-  $scope.answers = [];
-
+  // $scope.activeUsers = [];
+  // $scope.questions = [];
+  // $scope.answers = [];
 })
 
 

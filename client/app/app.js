@@ -22,17 +22,17 @@ angular.module('app', ['app.auth', 'app.user', 'ui.router'])
   .state('homeState.profile', {
     url: '/profile',
     templateUrl: 'app/user/home.profile.html', //#1 view
-    controller: 'ProfileController'
+    controller: 'HomeController'
   })
   .state('homeState.room', {
     url: '/room/:RoomName',
     templateUrl: 'app/user/home.room.html',
-    controller: 'RoomController'
+    controller: 'HomeController'
   })
   .state('homeState.game', {
     url: '/game',
     templateUrl: 'app/user/home.game.html',
-    controller: 'GameController'
+    controller: 'HomeController'
   })
   .state('otherwise', {
     url: '*path',

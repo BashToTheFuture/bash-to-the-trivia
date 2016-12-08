@@ -24,32 +24,41 @@ app.use(express.static(path.join(__dirname, '../client')));
 app.use(morgan('dev'));
 
 
+var connections =[];
+var users =[];
 //SOCKET.IO MANAGEMENT//
 
 io.on('connection', function(socket) {
   socket.on('signUp', function(user) {
+  	connections.push(socket);
     socket.username = user.username;
-    //Redirecting users to profile page on sign-up so we create a dummy room 'Profile' in which nothing happens
     socket.room = 'Profile';
-    //TODO: add user to the active users of the Profile room in REDIS DB
+    users.push(socket.username)
     socket.join('Profile');
+    console.log(socket.username+' connected to '+socket.room)
+    console.log('#connections=', connections.length);
   });
 
-  socket.on('signIn', function(user) {
-    socket.username = user.username;
-    //Redirecting users to profile page on sign-in so we create a dummy room 'Profile' in which nothing happens
-    socket.room = 'Profile';
-    //TODO: add user to the active users of the Profile room in REDIS DB
-    socket.join('Profile');
-  });
-
-  socket.on('changeRoom', function(newRoom) {
-    //TODO: Remove socket.username from socket.room in active user db
+   socket.on('disconnect', function() {
+   	connections.splice(connections.indexOf(socket), 1);
     if (socket.room !== 'Profile') {
       socket.broadcast.to(socket.room).emit('UserLeft', socket.username);
     }
     socket.leave(socket.room);
-    //TODO: Add socket.username to newRoom in active user db
+  });
+
+
+  socket.on('signIn', function(user) {
+    socket.username = user.username;
+    socket.room = 'Profile';
+    socket.join('Profile');
+  });
+
+  socket.on('changeRoom', function(newRoom) {
+    if (socket.room !== 'Profile') {
+      socket.broadcast.to(socket.room).emit('UserLeft', socket.username);
+    }
+    socket.leave(socket.room);
     socket.room = newRoom.roomname;
     socket.join(socket.room);
 
@@ -59,80 +68,23 @@ io.on('connection', function(socket) {
   });
 
   socket.on('addNewRoom', function(newRoom) {
-    //TODO: Remove socket.username from socket.room in active user db
     if (socket.room !== 'Profile') {
       socket.broadcast.to(socket.room).emit('UserLeft', socket.username);
     }
     socket.leave(socket.room);
-    //TODO: Add socket.username to newRoom in active user db
     socket.room = newRoom.roomname;
     socket.join(socket.room);
   });
 
-  socket.on('addNewPlayer', function(roomname, newPlayerUsername) {
-    var savedRoom = {};
-    User.findOne({username: newPlayerUsername}).exec(function(err, user) {
-      if (err) {
-        res.status(400).send('User not found');
-      } else {
-        var userAlreadyInRoom = false;
-        user.rooms.forEach(function(room) {
-          if (room === roomname) {
-            userAlreadyInRoom = true;
-            res.status(400).send('User already in the room');
-          }
-        });
-        if (!userAlreadyInRoom) {
-          user.rooms.push(roomname);
-          user.save(function(err, user) {
-            if (err) {
-              return res.status(400).send(new Error('Add new room to user error'));
-            }
-          }).then(function() {
-            Room.findOne({roomname: roomname}).exec(function(err, room) {
-              if (err) {
-                res.status(400).send('Room doesn\'t exist');
-              } else {
-                var userAlreadyInRoom = false;
-                room.users.forEach(function(user) {
-                  if (user === newPlayerUsername) {
-                    userAlreadyInRoom = true;
-                    res.status(400).send('User already in the room');
-                  }
-                });
-                if (!userAlreadyInRoom) {
-                  room.users.push(newPlayerUsername);
-                  room.save(function(err, room) {
-                    if (err) {
-                      return res.status(400).send(new Error('Add new user to room error'));
-                    }
-                    savedRoom = room;
-                  }).then(function(room) {
-                    socket.broadcast.emit('PlayerAdded', savedRoom, newPlayerUsername);
-                  });
-                }
-              }
-            });
-          });
-        }
-      }
-    });
-  });
-
-  socket.on('disconnect', function() {
-    //TODO: Remove socket.username from socket.room in active user db
-    if (socket.room !== 'Profile') {
-      socket.broadcast.to(socket.room).emit('UserLeft', socket.username);
-    }
-    socket.leave(socket.room);
-  });
+  function updateActiveUsers() {
+  	socket.emit('updateView', {activeUsers: users});
+  }
 
 });
 
 ////////////////////////
 app.get('/api/users', function(req, res) {
   User.find({}, function(err, users) {
-  	console.log(users)
     var allUsers = {};
     users.forEach(function(user) {
       allUsers[user._id] = user;
@@ -143,7 +95,6 @@ app.get('/api/users', function(req, res) {
 
 app.get('/api/rooms', function(req, res) {
   Room.find({}, function(err, rooms) {
-  	console.log(rooms)
     var allrooms = {};
     rooms.forEach(function(room) {
       allrooms[room._id] = room;
@@ -172,11 +123,9 @@ app.get('/api/users/:username/:roomname', function(req, res) {
 
 app.post('/api/users/addRoom', function(req, res) {
 	var roomname = req.body.roomname;
-	console.log("PARSED", roomname)
 	var admin = req.body.currentUser;
 	Room.findOne({roomname:roomname}).exec(function(err, room) {
 		if(err || room) {
-			console.log("ROOM ERR", room)
 			res.status(400).send('bad request');
 		} else {
 			var newRoom = Room({
@@ -233,18 +182,35 @@ app.post('/api/signup', function(req, res) {
 				})
 			})
 			promise.then(function(user) {
-				Room.findOne({roomname:'Lobby'}, function(err, room) {
+				console.log('user', user)
+				Room.findOne({roomname: "Lobby"}, function(err, room) {
+					console.log('room', room)
 					if(err) return res.sendStatus(500);
 					room.users.push(user.username);
 					room.save(function(err) {
-						if(err) res.send(err)
-							res.json(objectifyResp(room, user.username))
+						if(err) return res.send(err);
+						var rooms = {};
+						var resp = {};
+						rooms[room.roomname] = {
+							roomname: room.roomname,
+							users: room.users,
+							admin: room.admin
+						};
+						resp.username = user.username;
+						resp.rooms = rooms;
+						res.json(resp);
 					})
 				})
 			})
 		}
 	})
 })
+
+
+// query.where('comments').elemMatch(function (elem) {
+//   elem.where('author', 'bnoguchi')
+//   elem.where('votes').gte(5);
+// });
 
 app.post('/api/signin', function(req, res) {
 	var username = req.body.username;
@@ -255,8 +221,25 @@ app.post('/api/signin', function(req, res) {
 		} else {
 			user.auth(password, user.password).then(function(match) {
 				if(match) {
-					res.send(user);
+					Room.find({users: username}, function(err, foundRooms) {
+						if(err) return res.sendStatus(500);
+						console.log('ROOMS/ERR', foundRooms.length)
+						var rooms = {};
+						var resp = {};
+						for(var i = 0; i < foundRooms.length; i++) {
+							rooms[foundRooms[i].roomname] = {
+								roomname: foundRooms[i].roomname,
+								users: foundRooms[i].users,
+								admin: foundRooms[i].admin
+							};
+						}
+						resp.username = user.username;
+						console.log("ROOMS TO RESP",rooms)
+						resp.rooms = rooms;
+						return res.json(resp);
+					})
 				} else {
+					console.log('NO MATCH')
 					res.status(401).end();
 				}
 			})
@@ -267,7 +250,7 @@ app.post('/api/signin', function(req, res) {
 
 
 app.get('/api/questions', function(req, res) {
-
+    
   var promise = new Promise(function(resolve, reject) {
     request.get(questionApi, function (error, response, body) {
       if (error && !response.statusCode == 200) {
@@ -308,18 +291,24 @@ app.get('/api/questionsdb', function(req, res) {
 
 
 // HELPER FUNCTIONS
-function objectifyResp(selected, username) {
-	var currentRoom = {}
-	currentRoom[selected.roomname] = {
-		roomname: selected.roomname,
-		users: selected.users,
-		admin: selected.admin
-	};
-	return {
-		username: username,
-		room: currentRoom
-	}
-}
+// function objectifyResp(selected, username) {
+// 	var currentRoom = {}
+// 	currentRoom[selected.roomname] = {
+// 		roomname: selected.roomname,
+// 		users: selected.users,
+// 		admin: selected.admin
+// 	};
+// 	var currentUser = {};
+// 	currentUser = {
+// 		username: username,
+// 		rooms:
+// 	}
+
+// 	return {
+// 		currentUser: currentUser,
+// 		currentRoom: currentRoom
+// 	}
+// }
 
 function parser (string) {
 	return string[0].toUpperCase() + string.slice(1).toLowerCase();

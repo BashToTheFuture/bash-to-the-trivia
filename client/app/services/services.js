@@ -17,7 +17,6 @@ angular.module('app.services', [])
       this.currentRoom = this.rooms[room.roomname];
     },
 
-
     signUp: function(user) {
       var context = this;
       return $http({
@@ -25,12 +24,12 @@ angular.module('app.services', [])
         url: 'api/signup',
         data: user
       }).then(function(resp) {
+        console.log("resp Signup", resp.data)
         if (!resp.data) {
           $location.path('/signin');
         } else {
           context.user = resp.data.username;
           context.rooms = resp.data.room;
-          console.log("FORMAT", resp.data);
           socket.emit('signUp', {username: resp.data.username});
           $location.path('/home/profile');
         }
@@ -45,7 +44,7 @@ angular.module('app.services', [])
         url: 'api/signin',
         data: user
       }).then(function(resp) {
-        console.log('resp', resp);
+        console.log("resp Signin", resp)
         if (!resp.data.username) {
           $location.path('/signup');
         } else {

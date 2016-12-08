@@ -36,9 +36,12 @@ userSchema.pre('save', function(next) {
 User.prototype.auth = function (plain, hash) {
   return new Promise(function(resolve, reject) {
     bcrypt.compare(plain, hash, function(err, res) {
+      console.log("PASSWARS", plain, hash)
       if(err) {
+        console.log("ERR", err)
         reject(err);
       } else {
+        console.log("RES", res)
         resolve(res);
       }
     })
