@@ -1,4 +1,5 @@
 <div id="page-room-wrapper">
+<<<<<<< fb83c67c070ca548410bf864f79cef0319e81bcf
 	<h3>{{RoomName}}</h3><hr>
 
 	<div class="players">
@@ -8,14 +9,37 @@
 	  <li ng-repeat="name in users.usernames">{{name}}</li>
 	  </div>
 
+
+	  <button class="startGame btn" ui-sref="homeState.game">Start Game</button> <br><!-- ng-click="startGame()" -->
+	  <button class="deleteGame btn">Delete Game</button> <!-- ng-click="deleteGame()" -->
+<!-- =======
+	<h3>{{room.roomname}}</h3><hr>
+	<div class="players">
+		<h3>Players</h3>
+	  <div class="gamePlayer">
+		  <li ng-repeat="name in users.usernames">{{name}}</li>
+		  <input placehoder="newPlayer" ng-model="newPlayer.username"/>
+		  <button class="deleteGame btn" ng-click="addPlayer()">Add Player</button>
+		</div>
+	</div>
+	
+	<button class="startGame btn" ui-sref="homeState.game">Start Game</button><br>
+	<pre>users.usernames={{users.usernames}}</pre>
+	<pre>users={{users}}</</pre>
+	<button class="deleteGame btn">Delete Game</button> 
+
+</div>
+
+
+
+>>>>>>> some changes.. -->
+
 	  <!-- <li class="gamePlayer"><img id="minnie" ng-src="https://cdn-img.easyicon.net/png/11652/1165292.gif"></br>Minne</li>
 	  <li class="gamePlayer"><img id="mickey" ng-src="http://icons.iconarchive.com/icons/iconka/tailwaggers/128/dog-rich-icon.png"></br>Mickey</li>
 
 	  <li class="newUser"><img ng-src="http://www.axialis.com/objects/ip_icon_05_sample5d.png"></br>Add a new user!</li> -->
-	</div>
 
-	<button class="startGame btn" ui-sref="homeState.game">Start Game</button> <br><!-- ng-click="startGame()" -->
+	
+	  <!-- ng-click="deleteGame()" -->
 
-	<button class="deleteGame btn">Delete Game</button> <!-- ng-click="deleteGame()" -->
-
-</div>
+	  	  <!-- <div ng-repeat="url in players.avatars"><img ng-src="{{url}}" ng-model="url"></div> -->

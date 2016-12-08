@@ -17,10 +17,31 @@
 		  <li>
 		  	<a href="">[A list of friends]</a>
 		  </li>
+<!-- =======
+>>>>>>> some changes..
 		
-		</ul>
+		<div class="username" ui-sref=".profile">
+			<h3 >{{user}}</h3>
+			<ul>
+				<h4>Rooms</h4>
+				  <li ui-sref=".room" ng-repeat="room in rooms" >
+				  	<a ng-click="goToRoom(room)" href="">{{room.roomname}}</a>
+				  	<hr>
+				  </li>
+				<br>
+			  <form name="newRoom" ng-submit="addRoom(newRoomName)">
+			    <input type="text" ng-model="newRoomName"><br>
+			    <input type="submit" value="Add Room"><br>
+			  </form><br><br>
+			  
+			  <h4>My Friends</h4>
+			  <li>
+			  	<a href="">[A list of friends]</a>
+			  </li>
+			</ul>
+		</div>			
+
 	</div>
 	<div ui-view></div>
-</div>
-
+</div> -->
 
