@@ -17,7 +17,7 @@ var app = express();
 //Set up socket.io
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var mid1 = require('./middleware.js');
+
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../client')));
@@ -28,61 +28,79 @@ var connections =[];
 var users =[];
 //SOCKET.IO MANAGEMENT//
 
+// SEVDA VERSION //
 io.on('connection', function(socket) {
   socket.on('signUp', function(user) {
   	connections.push(socket);
     socket.username = user.username;
-    socket.room = 'Profile';
+    socket.roomname = 'Profile';
     users.push(socket.username)
     socket.join('Profile');
-    console.log(socket.username+' connected to '+socket.room)
+    console.log(socket.username+' connected to '+socket.roomname)
     console.log('#connections=', connections.length);
   });
 
    socket.on('disconnect', function() {
    	connections.splice(connections.indexOf(socket), 1);
-    if (socket.room !== 'Profile') {
-      socket.broadcast.to(socket.room).emit('UserLeft', socket.username);
+    if (socket.roomname !== 'Profile') {
+      socket.broadcast.to(socket.roomname).emit('UserLeft', socket.username);
     }
-    socket.leave(socket.room);
+    socket.leave(socket.roomname);
   });
 
 
   socket.on('signIn', function(user) {
     socket.username = user.username;
-    socket.room = 'Profile';
+    socket.roomname = 'Profile';
     socket.join('Profile');
   });
 
   socket.on('changeRoom', function(newRoom) {
-    if (socket.room !== 'Profile') {
-      socket.broadcast.to(socket.room).emit('UserLeft', socket.username);
+    if (socket.roomname !== 'Profile') {
+      socket.broadcast.to(socket.roomname).emit('UserLeft', socket.username);
     }
-    socket.leave(socket.room);
-    socket.room = newRoom.roomname;
-    socket.join(socket.room);
+    socket.leave(socket.roomname);
+    socket.roomname = newRoom.roomname;
+    socket.join(socket.roomname);
 
-    if (socket.room !== 'Profile') {
-      io.sockets.in(socket.room).emit('UserJoined', socket.username);
+    if (socket.roomname !== 'Profile') {
+      io.sockets.in(socket.roomname).emit('UserJoined', socket.username);
     }
   });
 
   socket.on('addNewRoom', function(newRoom) {
-    if (socket.room !== 'Profile') {
-      socket.broadcast.to(socket.room).emit('UserLeft', socket.username);
+    if (socket.roomname !== 'Profile') {
+      socket.broadcast.to(socket.roomname).emit('UserLeft', socket.username);
     }
-    socket.leave(socket.room);
-    socket.room = newRoom.roomname;
-    socket.join(socket.room);
+    socket.leave(socket.roomname);
+    socket.roomname = newRoom.roomname;
+    socket.join(socket.roomname);
   });
 
-  function updateActiveUsers() {
-  	socket.emit('updateView', {activeUsers: users});
-  }
+  // function updateActiveUsers() {
+  // 	socket.emit('updateView', {activeUsers: users});
+  // }
+
+  socket.on('addNewPlayer', function(room, newPlayerUsername) {
+    io.sockets.emit('PlayerAdded', room, newPlayerUsername);
+  });  
+
+  socket.on('startNewGame', function(allQuestions) {
+    io.sockets.in(socket.roomname).emit('SendQuestions', allQuestions);
+  });
+
 
 });
 
-////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////
+
 app.get('/api/users', function(req, res) {
   User.find({}, function(err, users) {
     var allUsers = {};
@@ -147,7 +165,8 @@ app.post('/api/users/addRoom', function(req, res) {
 							if(err) {
 								res.status(500).send(new Error('Error on save Admin'));
 							}
-						}).then(function() {
+						}).then(function(resp) {
+								console.log("resp", resp)
 								res.sendStatus(201);
 						})
 					}
@@ -155,8 +174,41 @@ app.post('/api/users/addRoom', function(req, res) {
 			})
 		}
 	})
-})
+});
 
+app.post('/api/users/addNewPlayer', function(req, res) {
+	var roomname = req.body.roomname;
+	var newPlayerUsername = req.body.newPlayerUsername;
+	Room.findOne({roomname: roomname, users: newPlayerUsername}).exec(function(err, room) {
+		if(room) {
+			return res.status(400).send('User already in room');
+		} else {
+			Room.findOne({roomname: roomname}).exec(function(err, room) {
+				if (err || room === null) {
+					return res.status(400).send('Room doesn\'t exist');
+				} 
+				room.users.push(newPlayerUsername);
+				room.save(function(err){
+					if(err) {
+						return res.status(400).send('Cannot save room updates');
+					}
+					User.findOne({username: newPlayerUsername}).exec(function(err, user) {
+						if (user === null || err) {
+							return res.status(400).send('User doesn\'t exist');
+						} 
+						user.rooms.push(roomname);
+						user.save(function(err){
+							if(err) {
+								return res.status(400).send('Cannot save user updates');
+							}
+							res.status(201).send('Added new player succesfully');						
+						});
+					});
+				});
+			});
+		}
+	}); 
+});
 
 app.post('/api/signup', function(req, res) {
 	var username = req.body.username;
@@ -190,13 +242,15 @@ app.post('/api/signup', function(req, res) {
 					room.save(function(err) {
 						if(err) return res.send(err);
 						var rooms = {};
+						var user = {};
 						var resp = {};
 						rooms[room.roomname] = {
 							roomname: room.roomname,
 							users: room.users,
 							admin: room.admin
 						};
-						resp.username = user.username;
+						user.username = username;
+						resp.user = user;
 						resp.rooms = rooms;
 						res.json(resp);
 					})
@@ -222,10 +276,12 @@ app.post('/api/signin', function(req, res) {
 			user.auth(password, user.password).then(function(match) {
 				if(match) {
 					Room.find({users: username}, function(err, foundRooms) {
+						console.log('ROOM FIND USERS', foundRooms)
 						if(err) return res.sendStatus(500);
-						console.log('ROOMS/ERR', foundRooms.length)
+						// console.log('ROOMS/ERR', foundRooms.length)
 						var rooms = {};
 						var resp = {};
+						var user = {};
 						for(var i = 0; i < foundRooms.length; i++) {
 							rooms[foundRooms[i].roomname] = {
 								roomname: foundRooms[i].roomname,
@@ -233,9 +289,10 @@ app.post('/api/signin', function(req, res) {
 								admin: foundRooms[i].admin
 							};
 						}
-						resp.username = user.username;
-						console.log("ROOMS TO RESP",rooms)
+						user.username = username;
+						resp.user = user;
 						resp.rooms = rooms;
+						console.log(resp)
 						return res.json(resp);
 					})
 				} else {
@@ -249,8 +306,11 @@ app.post('/api/signin', function(req, res) {
 
 
 
-app.get('/api/questions', function(req, res) {
-    
+
+
+
+
+app.get('/api/questions', function(req, res) {  
   var promise = new Promise(function(resolve, reject) {
     request.get(questionApi, function (error, response, body) {
       if (error && !response.statusCode == 200) {
@@ -262,18 +322,17 @@ app.get('/api/questions', function(req, res) {
   })
   promise.then(function(body) {
     var temp = JSON.parse(body).results;
-      for(var i = 0; i < 10; i++) {
-        var qt = new Question({
-          question: temp[i].question,
-          correctAnswer: temp[i].correct_answer,
-          incorrectAnswer: temp[i].incorrect_answers,
-        });
-        qt.save();
-      }
     res.json(temp);
+      // for(var i = 0; i < 10; i++) {
+      //   var qt = new Question({
+      //     question: temp[i].question,
+      //     correctAnswer: temp[i].correct_answer,
+      //     incorrectAnswer: temp[i].incorrect_answers,
+      //   });
+      //   qt.save();
+      // }
   }).catch(function(err) {
-        console.log(err)
-        res.json(err)
+      res.status(404).json(err)
     })
 })
 

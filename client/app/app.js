@@ -2,9 +2,10 @@ angular.module('app', ['app.auth', 'app.user', 'ui.router'])
 
 
 .config(function($stateProvider) {
+
   $stateProvider
   .state('signinState', {
-    url: '/',
+    url: '/signin',
     templateUrl: 'app/auth/signin.html',
     controller: 'AuthController'
   })
@@ -15,7 +16,7 @@ angular.module('app', ['app.auth', 'app.user', 'ui.router'])
   })
   .state('homeState', {
     url: '/home',
-    abstract: true, //TODO
+    abstract: true,
     templateUrl: 'app/user/home.html',
     controller: 'HomeController'
   })
@@ -25,7 +26,7 @@ angular.module('app', ['app.auth', 'app.user', 'ui.router'])
     controller: 'HomeController'
   })
   .state('homeState.room', {
-    url: '/room/:RoomName',
+    url: '/room/:roomname',
     templateUrl: 'app/user/home.room.html',
     controller: 'HomeController'
   })
