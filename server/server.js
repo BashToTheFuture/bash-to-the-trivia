@@ -3,7 +3,9 @@ var bodyParser = require('body-parser');
 var path = require('path');
 var request = require('request');
 var morgan = require('morgan');
-// var jwt = require('jsonwebtoken');
+var expressJwt = require('express-jwt');
+var jwt = require('jsonwebtoken');
+var unless = require('express-unless');
 
 
 var mongoose = require('mongoose');
@@ -19,6 +21,7 @@ var app = express();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
+// app.use('/api', expressJwt({secret: 'bashtothetrivia'}));
 app.use(bodyParser.urlencoded({extended:true}));
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, '../client')));
@@ -278,7 +281,7 @@ app.get('/api/getScores/:roomname', function(req, res) {
   });
 });
 
-app.post('/api/signup', function(req, res) {
+app.post('/signup', function(req, res) {
 	var username = req.body.username;
 	var password = req.body.password;
 	User.findOne({username: username}).exec(function(err, user) {
@@ -301,7 +304,7 @@ app.post('/api/signup', function(req, res) {
 					}
 				})
 			})
-			promise.then(function(user) {
+			promise.then(function() {
 				Room.findOne({roomname: "Lobby"}, function(err, room) {
 					if(err) return res.sendStatus(500);
           var newUser = {
@@ -311,7 +314,7 @@ app.post('/api/signup', function(req, res) {
 					room.users.push(newUser);
 					room.save(function(err) {
 						if(err) return res.send(err);
-            // var token = jwt.sign(user, 'bashtothetrivia');
+            // var token = jwt.sign(newUser.username, 'bashtothetrivia');
 						var rooms = {};
 						var user = {};
 						var resp = {};
@@ -323,7 +326,7 @@ app.post('/api/signup', function(req, res) {
 						user.username = username;
 						resp.user = user;
 						resp.rooms = rooms;
-            // resp.token = token;
+            // resp.token = token
 						res.json(resp);
 					})
 				})
@@ -332,7 +335,7 @@ app.post('/api/signup', function(req, res) {
 	})
 })
 
-app.post('/api/signin', function(req, res) {
+app.post('/signin', function(req, res) {
 	var username = req.body.username;
 	var password = req.body.password;
 	User.findOne({username: username}).exec(function(err, user) {
@@ -369,12 +372,6 @@ app.post('/api/signin', function(req, res) {
 	})
 })
 
-
-
-
-
-
-
 app.get('/api/questions', function(req, res) {
   var promise = new Promise(function(resolve, reject) {
     request.get(questionApi, function (error, response, body) {
@@ -386,7 +383,35 @@ app.get('/api/questions', function(req, res) {
     });
   })
   promise.then(function(body) {
-    var temp = JSON.parse(body).results;
+    var temp0 = JSON.parse(body).results;
+    //Function translate will replace the special characters in the questions && answers
+    function translate(src){
+      var questions = [];
+      for (var i = 0; i < src.length; i++) {
+        var result = {};
+        var q = src[i].question;
+        console.log(q);
+        //two most commonly seen one, see if you can combine them into 1 line of code
+        var question = q.replace(/&quot;/gi, '\'').replace(/&#039;/gi,'\'');
+        //less comon
+        // var question= q2.replace(/&eacute;/gi,'e');
+        result['question'] = question;
+
+        var ca = src[i].correct_answer;
+        var correct_answer = ca.replace(/&quot;/gi, '\'').replace(/&#039;/gi,'\'');
+        result['correct_answer'] = correct_answer;
+
+        var ia = src[i].incorrect_answers;
+        var incorrect_answers = [];
+        for (j = 0; j < ia.length; j++) {
+          incorrect_answers.push(ia[j].replace(/&quot;/gi, '\'').replace(/&#039;/gi,'\''));
+        };
+        result['incorrect_answers'] = incorrect_answers;
+        questions[i] = result;
+      }
+        return questions;
+    };
+    var temp = translate(temp0);
     res.json(temp);
       for(var i = 0; i < 10; i++) {
         var qt = new Question({
@@ -437,7 +462,6 @@ app.get('/api/questionsdb', function(req, res) {
 function parser (string) {
 	return string[0].toUpperCase() + string.slice(1).toLowerCase();
 };
-
 
 
 http.listen(8080, function() {

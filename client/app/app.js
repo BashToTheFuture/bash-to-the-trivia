@@ -1,7 +1,7 @@
 angular.module('app', ['app.auth', 'app.user', 'ui.router'])
 
 
-.config(function($stateProvider, $httpProvider) {
+.config(function($stateProvider, $httpProvider, $qProvider) {
 
   $stateProvider
   .state('signinState', {
@@ -40,26 +40,68 @@ angular.module('app', ['app.auth', 'app.user', 'ui.router'])
     templateUrl: 'app/user/landing-page.html',
   });
 
-  // $httpProvider.interceptors.push('AttachTokens');
+  // $qProvider.errorOnUnhandledRejections(false);
 
 })
-// .factory('AttachTokens', function($window) {
-
-//   var attach = {
+// .factory('AttachTokens', function($rootScope, $window, $location, $q) {
+//   console.log('here???')
+//   return {
 //     request: function(object) {
-//       var jwt = $window.localStorage.getItem('com.trivia');
-//       if (jwt) {
-//         object.headers['x-access-token'] = jwt;
+//       console.log('object: ', object);
+//       object.headers = object.headers || {};
+//       if ($window.localStorage['com.trivia']) {
+//         config.headers.Authorization = 'Bearer ' + $window.localStorage['com.trivia'];
+//         console.log('config.headers.Authorization: ', config.headers.Authorization);
 //       }
-//       object.headers['Allow-Control-Allow-Origin'] = '*';
 //       return object;
+//     },
+//     response: function(response) {
+//       console.log('response',response);
+//       if(response.status === 401) {
+//         $location.path('/signin');
+//         return;
+//       }
+//       return response || $q.when(response);
 //     }
 //   };
-//   return attach;
-// }).run(function($rootScope, $location, UserInfo) {
 
-//   $rootScope.$on('$stateChandeStart', function(event, next, current) {
+// })
+
+// .config(function ($httpProvider) {
+//   $httpProvider.interceptors.push('AttachTokens');
+// });
+// .run(function($rootScope, $location, UserInfo) {
+
+//   $rootScope.$on('$stateChangeStart', function(event, next, current) {
 //     if (next.$$state && next.$$state.authenticate &&)
 //   })
 
 // });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

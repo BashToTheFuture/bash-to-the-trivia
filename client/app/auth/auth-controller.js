@@ -1,7 +1,7 @@
 angular.module('app.auth', ['app.services'])
 
 
-.controller('AuthController', function($scope, $window, UserInfo, $location) {
+.controller('AuthController', function($scope, UserInfo, $location) {
 
   $scope.user = {};
 
@@ -11,14 +11,7 @@ angular.module('app.auth', ['app.services'])
   };
 
   $scope.signUp = function() {
-    UserInfo.signUp($scope.user)
-    // .then(function (token) {
-    //   $window.localStorage.setItem('com.trivia', token);
-    //   $location.path('api/home/profile');
-    // })
-    // .catch(function(error) {
-    //   console.log(error);
-    // });
+    UserInfo.signUp($scope.user);
     //TODO: SEND signin info to server to check if user exists; if so, check if passwords is correct.
   };
 

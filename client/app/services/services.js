@@ -1,7 +1,7 @@
 // ADD SERVICES AND FACTORIES HERE
 
 angular.module('app.services', [])
-.factory('UserInfo', function($http, $rootScope, $location, $timeout) {
+.factory('UserInfo', function($http, $rootScope, $location, $window) {
   var socket = io.connect();
 
   return {
@@ -78,17 +78,6 @@ angular.module('app.services', [])
       return this.rooms[room.roomname] = room;
       //TODO: update rooms object to add the new roomname, admin and users
     },
-    // removeActiveUser: function(username) {
-    //   var index = this.activeUsers.indexOf(username);
-    //   this.activeUsers.splice(index, 1);
-    // },
-    // addActiveUser: function(username) {
-    //   if (username !== this.user) {
-    //     this.activeUsers.push(username);
-    //   } else {
-    //     //TODO: Emit server request to REDIS DB to get the database of all the active users in the currentroom
-    //   }
-    // },
     invitedToNewRoom: function(roomInfo) {
       this.rooms[roomInfo.roomname] = roomInfo;
     },
@@ -157,9 +146,10 @@ angular.module('app.services', [])
       var context = this;
       return $http({
         method: 'POST',
-        url: 'api/signup',
+        url: 'signup/',
         data: user
       }).then(function(resp) {
+        console.log("RESP",resp)
         console.log("signUp response", resp.data);
         if (!resp.data) {
           $location.path('/signin');
@@ -167,11 +157,11 @@ angular.module('app.services', [])
           context.user.username = resp.data.user.username;
           context.rooms = resp.data.rooms;
           socket.emit('signUp', {username: resp.data.user.username});
-          // console.log('TOKEN: ', resp.data.token);
-          // return resp.data.token;
+          // $window.localStorage.setItem('com.trivia', resp.data.token);
           $location.path('/home/profile');
         }
       }).catch(function(err) {
+        delete $window.localStorage;
         console.log('signup error: ', err);
       });
     },
@@ -180,7 +170,7 @@ angular.module('app.services', [])
       var context = this;
       return $http({
         method: 'POST',
-        url: 'api/signin',
+        url: 'signin/',
         data: user
       }).then(function(resp) {
         console.log("signIn response", resp.data);
