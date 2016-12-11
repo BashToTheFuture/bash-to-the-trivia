@@ -50,6 +50,8 @@ io.on('connection', function(socket) {
     if (socket.roomname !== 'Profile') {
       socket.broadcast.to(socket.roomname).emit('UserLeft', socket.username);
     }
+    var index = roomsX[socket.roomname].indexOf(socket.username);
+    roomsX[socket.roomname].splice(index, 1);
     socket.leave(socket.roomname);
   });
 
@@ -66,6 +68,7 @@ io.on('connection', function(socket) {
     var currentRoom = socket.roomname;
     var newRoom = newRoomObj.roomname;
     socket.broadcast.to(currentRoom).emit('UserLeft', socket.username);
+    console.log('roomsX: ', roomsX);
     var index = roomsX[currentRoom].indexOf(socket.username);
     roomsX[currentRoom].splice(index, 1);
     socket.leave(currentRoom);
@@ -304,7 +307,7 @@ app.post('/signup', function(req, res) {
 					}
 				})
 			})
-			promise.then(function() {
+			promise.then(function(user) {
 				Room.findOne({roomname: "Lobby"}, function(err, room) {
 					if(err) return res.sendStatus(500);
           var newUser = {

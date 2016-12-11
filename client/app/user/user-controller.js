@@ -163,8 +163,6 @@ angular.module('app.user', ['app.services'])
     } else {
       $scope.gameState.isCorrect = 'no';
     }
-
-
     $scope.clear();
   };
 
